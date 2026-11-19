@@ -269,14 +269,14 @@
 			}, reconnectDelay);
 			reconnectDelay = Math.min(reconnectDelay * 1.5, 15000);
 		};
-		ws.onerror = () => {}; // onclose сработает следом
+		ws.onerror = () => {};
 	}
 
 	function handleEnvelope(env) {
 		switch (env.type) {
 			case "history":
 				sessionEstablished = true; authRejected = false; takenRetries = 0; reconnectDelay = 1500;
-				localStorage.setItem(NAME_KEY, username);   // сохраняем имя на клиенте
+				localStorage.setItem(NAME_KEY, username);
 				showApp(); setStatus(true, "на связи ✨");
 				resetChat();
 				(env.messages || []).forEach(addMessage);
@@ -288,7 +288,6 @@
 			case "users": renderUsers(env.users || []); break;
 			case "error":
 				if (env.code === "name_taken") {
-					// при обрыве связи старое соединение может ещё «висеть» — пробуем снова
 					if (sessionEstablished && takenRetries < 5) { takenRetries++; }
 					else {
 						authRejected = true;
@@ -313,7 +312,7 @@
 		messages.push(msg); msgById.set(msg.id, msg);
 		chatBox.appendChild(renderMessage(msg));
 		emptyHint.hidden = true;
-		while (messages.length > MAX_MESSAGES) {   // держим только последние 100
+		while (messages.length > MAX_MESSAGES) {
 			const old = messages.shift();
 			msgById.delete(old.id);
 			const node = chatBox.querySelector(`[data-id="${old.id}"]`);
@@ -336,7 +335,7 @@
 		meta.className = "meta";
 		const nameEl = document.createElement("span");
 		nameEl.className = "name";
-		nameEl.textContent = msg.username;          // textContent — безопасно от XSS
+		nameEl.textContent = msg.username;
 		nameEl.style.color = nameColor(msg.username);
 		const timeEl = document.createElement("span");
 		timeEl.className = "time";
