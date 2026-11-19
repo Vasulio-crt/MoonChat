@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Лунный чат</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🌙</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+	* { box-sizing: border-box; }
+	[hidden] { display: none !important; }
+
+	body {
+		margin: 0; min-height: 100vh; padding: 20px 12px;
+		display: flex; align-items: center; justify-content: center;
+		font-family: "Comfortaa", "Segoe UI", sans-serif;
+		font-size: 16px;
+		color: #efeaff; overflow-x: hidden;
+		background: linear-gradient(160deg, #0d0b1e 0%, #1a1233 45%, #241640 100%);
+		background-attachment: fixed;
+	}
+
+	body::before, body::after {
+		content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+		background-image:
+			radial-gradient(1px 1px at 25px 35px, rgba(255,255,255,.9), transparent),
+			radial-gradient(1px 1px at 120px 90px, rgba(255,255,255,.6), transparent),
+			radial-gradient(1.5px 1.5px at 200px 160px, rgba(240,230,255,.8), transparent),
+			radial-gradient(1px 1px at 300px 60px, rgba(255,255,255,.5), transparent),
+			radial-gradient(1.5px 1.5px at 380px 220px, rgba(255,255,255,.7), transparent);
+		background-size: 420px 260px;
+		animation: twinkle 5s ease-in-out infinite alternate;
+	}
+	body::after { background-size: 560px 340px; animation-duration: 7s; animation-delay: 2s; }
+	@keyframes twinkle { from { opacity: .3; } to { opacity: .95; } }
+
+	.moon {
+		position: fixed; top: 44px; right: 7%; width: 74px; height: 74px; border-radius: 50%;
+		background: radial-gradient(circle at 30% 30%, #fff7d6, #f3e3a1 60%, #e8d389);
+		box-shadow: 0 0 50px 18px rgba(247,237,201,.22), inset -10px -8px 0 rgba(0,0,0,.06);
+		animation: float 9s ease-in-out infinite; z-index: 0; opacity: .95;
+	}
+	@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+
+	.card {
+		background: rgba(30,22,58,.55); backdrop-filter: blur(10px);
+		border: 1px solid rgba(196,181,253,.22); border-radius: 24px;
+		box-shadow: 0 10px 40px rgba(0,0,0,.45), 0 0 30px rgba(139,92,246,.12);
+	}
+
+	/* ---- вход ---- */
+	#login-screen {
+		position: relative; z-index: 1; width: min(370px, 94vw);
+		padding: 30px 26px; text-align: center;
+		display: flex; flex-direction: column; gap: 12px;
+	}
+	.orb { font-size: 54px; animation: float 6s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(217,70,239,.5)); }
+	h1, h2 { margin: 0; }
+	#login-screen h1 { font-size: 26px; text-shadow: 0 0 18px rgba(217,70,239,.45); }
+	.subtitle { margin: 0; font-size: 13px; color: #b7a8e8; }
+	#login-form { display: flex; flex-direction: column; gap: 10px; }
+	.error { margin: 0; min-height: 16px; font-size: 13px; color: #f9a8d4; }
+
+	input {
+		font-family: inherit; font-size: 16px; color: #f3efff; outline: none;
+		background: rgba(255,255,255,.06); border: 1px solid rgba(167,139,250,.25);
+		border-radius: 14px; padding: 12px 14px; width: 100%;
+		transition: border-color .15s, box-shadow .15s;
+	}
+	input::placeholder { color: #8d7fc0; }
+	input:focus { border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(196,181,253,.15); }
+
+	button { cursor: pointer; font-family: inherit; border: none; transition: .15s; }
+	.primary {
+		background: linear-gradient(135deg, #8b5cf6, #d946ef); color: #fff;
+		border-radius: 14px; padding: 12px 16px; font-weight: 700; font-size: 15px;
+		box-shadow: 0 4px 18px rgba(168,85,247,.35);
+	}
+	.primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+	.primary:active { transform: scale(.97); }
+	.ghost {
+		background: transparent; color: #b7a8e8; font-size: 13px;
+		border: 1px solid rgba(196,181,253,.25); border-radius: 10px; padding: 4px 10px;
+	}
+	.ghost:hover { color: #fff; border-color: #c4b5fd; }
+
+	/* ---- чат ---- */
+	#app { position: relative; z-index: 1; width: min(540px, 96vw); display: flex; flex-direction: column; gap: 10px; }
+	header { padding: 12px 16px; border-radius: 18px; display: flex; flex-direction: column; gap: 8px; }
+	.title-row { display: flex; align-items: center; gap: 10px; }
+	.title-row h1 { flex: 1; font-size: 22px; text-shadow: 0 0 18px rgba(217,70,239,.45); }
+	.status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #b7a8e8; }
+	#status-dot { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; animation: pulse 1.2s infinite; }
+	#status-dot.on { background: #6ee7b7; box-shadow: 0 0 8px #6ee7b7; animation: none; }
+	@keyframes pulse { 50% { opacity: .35; } }
+
+	.users { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: #b7a8e8; }
+	.chip { padding: 2px 9px; border-radius: 999px; background: rgba(167,139,250,.14); border: 1px solid rgba(167,139,250,.25); }
+	.chip.me { background: linear-gradient(135deg, rgba(139,92,246,.55), rgba(217,70,239,.45)); color: #fff; }
+
+	#chat-box {
+		height: min(58vh, 480px); min-height: 300px; overflow-y: auto;
+		display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 20px;
+	}
+	#chat-box::-webkit-scrollbar { width: 8px; }
+	#chat-box::-webkit-scrollbar-thumb { background: rgba(167,139,250,.35); border-radius: 8px; }
+	.empty { margin: auto; color: #8d7fc0; font-style: italic; font-size: 15px; }
+	.sys { align-self: center; text-align: center; font-size: 13px; font-style: italic; color: #9d8fc7; opacity: .85; }
+
+	.msg-row { display: flex; align-items: center; gap: 6px; }
+	.msg-row.own { flex-direction: row-reverse; }
+	.bubble {
+		max-width: 80%; padding: 9px 13px; border-radius: 16px;
+		background: rgba(255,255,255,.05); border: 1px solid rgba(167,139,250,.18);
+	}
+	.own .bubble {
+		background: linear-gradient(135deg, rgba(139,92,246,.35), rgba(217,70,239,.25));
+		border-color: rgba(240,171,252,.35);
+	}
+	.meta { display: flex; align-items: baseline; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+	.own .meta { justify-content: flex-end; }
+	.name { font-weight: 700; }
+	.time { opacity: .5; }
+	.text { font-size: 16px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+
+	.reply-btn {
+		background: transparent; color: #b7a8e8; font-size: 17px; padding: 2px 6px;
+		border-radius: 8px; opacity: 0;
+	}
+	.msg-row:hover .reply-btn { opacity: 1; }
+	.reply-btn:hover { color: #f0abfc; background: rgba(196,181,253,.12); }
+	@media (hover: none) { .reply-btn { opacity: .55; } }
+
+	.reply-preview {
+		cursor: pointer; margin: 4px 0 6px; padding: 4px 8px; border-radius: 8px;
+		border-left: 3px solid #c4b5fd; background: rgba(196,181,253,.12); font-size: 13px;
+	}
+	.reply-preview:hover { background: rgba(196,181,253,.2); }
+	.rp-name { font-weight: 700; color: #e9d5ff; }
+	.rp-text { display: block; opacity: .75; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+	.flash { animation: flash 1.2s ease-out; }
+	@keyframes flash {
+		0% { box-shadow: 0 0 0 2px rgba(240,171,252,.8), 0 0 18px rgba(240,171,252,.6); }
+		100% { box-shadow: none; }
+	}
+
+	#reply-bar {
+		display: flex; align-items: center; justify-content: space-between; gap: 8px;
+		padding: 8px 12px; border-radius: 12px; font-size: 13px; color: #d8ccff;
+		border-left: 3px solid #d946ef;
+	}
+	#reply-info { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.input-row { display: flex; gap: 8px; }
+	.input-row input { flex: 1; }
+	#send-btn { font-size: 18px; padding: 12px 18px; }
+
+	#toast {
+		position: fixed; left: 50%; bottom: 26px; z-index: 5; pointer-events: none;
+		transform: translateX(-50%) translateY(20px); opacity: 0; transition: .25s;
+		background: rgba(30,22,58,.92); border: 1px solid rgba(196,181,253,.3);
+		border-radius: 999px; padding: 10px 16px; font-size: 14px;
+	}
+	#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="moon"></div>
+<div id="toast"></div>
+
+<section id="login-screen" class="card" hidden>
+	<div class="orb">🔮</div>
+	<h1>Лунный чат</h1>
+	<p class="subtitle">уютный уголок для полуночных разговоров ✨</p>
+	<form id="login-form">
+		<input id="name-input" maxlength="20" placeholder="Твоё имя…" autocomplete="off" spellcheck="false">
+		<button type="submit" class="primary">Войти ✨</button>
+	</form>
+	<p id="login-error" class="error"></p>
+</section>
+
+<main id="app" hidden>
+	<header class="card">
+		<div class="title-row">
+			<h1>🌙 Лунный чат</h1>
+			<div class="status"><span id="status-dot"></span><span id="status-text">…</span></div>
+		</div>
+		<div id="users" class="users"></div>
+	</header>
+
+	<div id="chat-box" class="card">
+		<div id="empty-hint" class="empty">Пока тихо… напиши первое заклинание ✨</div>
+	</div>
+
+	<div id="reply-bar" class="card" hidden>
+		<span id="reply-info"></span>
+		<button id="reply-cancel" class="ghost" title="Отменить ответ">✕</button>
+	</div>
+
+	<div class="input-row">
+		<input id="msg-input" maxlength="1000" placeholder="Нашепчи сообщение…" autocomplete="off">
+		<button id="send-btn" class="primary" title="Отправить" aria-label="Отправить">✨</button>
+	</div>
+</main>
+
+<script>
+	const MAX_MESSAGES = 100;
+	const NAME_KEY = "gochat_name";
+	const NAME_RE = /^[a-zA-Z0-9]{2,20}$/;
+
+	const $ = (id) => document.getElementById(id);
+	const loginScreen = $("login-screen"), app = $("app"), chatBox = $("chat-box"),
+		input = $("msg-input"), replyBar = $("reply-bar"), replyInfo = $("reply-info"),
+		usersBox = $("users"), statusDot = $("status-dot"), statusText = $("status-text"),
+		loginError = $("login-error"), nameInput = $("name-input"),
+		emptyHint = $("empty-hint"), toast = $("toast");
+
+	let ws = null, username = "", replyTarget = null;
+	let messages = [];
+	const msgById = new Map();
+	let reconnectDelay = 1500, reconnectTimer = null, toastTimer = null;
+	let authRejected = false, sessionEstablished = false, takenRetries = 0;
+
+	const COLORS = ["#f9a8d4","#c4b5fd","#a5f3fc","#bef264","#fcd34d","#fda4af","#99f6e4","#d8b4fe"];
+	function nameColor(name) {
+		let h = 0;
+		for (const ch of name.toLowerCase()) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+		return COLORS[h % COLORS.length];
+	}
+	const snippet = (t, n = 80) => t.length > n ? t.slice(0, n) + "…" : t;
+	const fmtTime = (ts) => new Date(ts).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+	const nearBottom = () => chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 90;
+	const scrollDown = () => { chatBox.scrollTop = chatBox.scrollHeight; };
+
+	function showToast(text) {
+		toast.textContent = text;
+		toast.classList.add("show");
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
+	}
+	function setStatus(on, text) {
+		statusDot.classList.toggle("on", on);
+		statusText.textContent = text;
+	}
+	function showLogin(err) { loginScreen.hidden = false; app.hidden = true; loginError.textContent = err || ""; nameInput.focus(); }
+	function showApp() { loginScreen.hidden = true; app.hidden = false; }
+
+	// ---------- соединение ----------
+	function connect(name) {
+		if (!name) return;
+		username = name;
+		if (ws) { ws.onmessage = ws.onclose = ws.onerror = null; try { ws.close(); } catch (e) {} }
+		setStatus(false, "соединяемся…");
+		const proto = location.protocol === "https:" ? "wss://" : "ws://";
+		ws = new WebSocket(proto + location.host + "/ws?name=" + encodeURIComponent(name));
+
+		ws.onmessage = (event) => {
+			let env;
+			try { env = JSON.parse(event.data); } catch (e) { return; }
+			handleEnvelope(env);
+		};
+		ws.onclose = () => {
+			setStatus(false, "нет связи");
+			if (authRejected || !username) return;
+			setStatus(false, "переподключение…");
+			clearTimeout(reconnectTimer);
+			reconnectTimer = setTimeout(() => {
+				if (!authRejected) connect(username);
+			}, reconnectDelay);
+			reconnectDelay = Math.min(reconnectDelay * 1.5, 15000);
+		};
+		ws.onerror = () => {}; // onclose сработает следом
+	}
+
+	function handleEnvelope(env) {
+		switch (env.type) {
+			case "history":
+				sessionEstablished = true; authRejected = false; takenRetries = 0; reconnectDelay = 1500;
+				localStorage.setItem(NAME_KEY, username);   // сохраняем имя на клиенте
+				showApp(); setStatus(true, "на связи ✨");
+				resetChat();
+				(env.messages || []).forEach(addMessage);
+				renderUsers(env.users || []);
+				scrollDown(); input.focus();
+				break;
+			case "message": addMessage(env.message); break;
+			case "system": addSystem(env.content); break;
+			case "users": renderUsers(env.users || []); break;
+			case "error":
+				if (env.code === "name_taken") {
+					// при обрыве связи старое соединение может ещё «висеть» — пробуем снова
+					if (sessionEstablished && takenRetries < 5) { takenRetries++; }
+					else {
+						authRejected = true;
+						localStorage.removeItem(NAME_KEY);
+						showLogin(env.content || "Это имя уже занято 🔮 Выбери другое.");
+					}
+				} else showToast(env.content || "Ошибка");
+				break;
+		}
+	}
+
+	// ---------- рендер ----------
+	function resetChat() {
+		messages = []; msgById.clear(); replyTarget = null; replyBar.hidden = true;
+		chatBox.replaceChildren(emptyHint);
+		emptyHint.hidden = false;
+	}
+
+	function addMessage(msg) {
+		if (!msg || msgById.has(msg.id)) return;
+		const wasNear = nearBottom();
+		messages.push(msg); msgById.set(msg.id, msg);
+		chatBox.appendChild(renderMessage(msg));
+		emptyHint.hidden = true;
+		while (messages.length > MAX_MESSAGES) {   // держим только последние 100
+			const old = messages.shift();
+			msgById.delete(old.id);
+			const node = chatBox.querySelector(`[data-id="${old.id}"]`);
+			if (node) node.remove();
+			if (replyTarget && replyTarget.id === old.id) clearReply();
+		}
+		if (wasNear || msg.username === username) scrollDown();
+	}
+
+	function renderMessage(msg) {
+		const own = msg.username === username;
+		const row = document.createElement("div");
+		row.className = "msg-row" + (own ? " own" : "");
+		row.dataset.id = msg.id;
+
+		const bubble = document.createElement("div");
+		bubble.className = "bubble";
+
+		const meta = document.createElement("div");
+		meta.className = "meta";
+		const nameEl = document.createElement("span");
+		nameEl.className = "name";
+		nameEl.textContent = msg.username;          // textContent — безопасно от XSS
+		nameEl.style.color = nameColor(msg.username);
+		const timeEl = document.createElement("span");
+		timeEl.className = "time";
+		timeEl.textContent = fmtTime(msg.timestamp);
+		meta.append(nameEl, timeEl);
+		bubble.appendChild(meta);
+
+		if (msg.replyTo) {
+			const rp = document.createElement("div");
+			rp.className = "reply-preview";
+			rp.title = "Перейти к сообщению";
+			const rn = document.createElement("span");
+			rn.className = "rp-name";
+			rn.textContent = "↩ " + msg.replyTo.username;
+			const rt = document.createElement("span");
+			rt.className = "rp-text";
+			rt.textContent = snippet(msg.replyTo.content);
+			rp.append(rn, rt);
+			rp.onclick = () => jumpTo(msg.replyTo.id);
+			bubble.appendChild(rp);
+		}
+
+		const text = document.createElement("div");
+		text.className = "text";
+		text.textContent = msg.content;
+		bubble.appendChild(text);
+
+		const btn = document.createElement("button");
+		btn.className = "reply-btn";
+		btn.textContent = "↩";
+		btn.title = "Ответить";
+		btn.onclick = () => setReply(msg);
+
+		row.append(bubble, btn);
+		return row;
+	}
+
+	function addSystem(text) {
+		const wasNear = nearBottom();
+		const div = document.createElement("div");
+		div.className = "sys";
+		div.textContent = text;
+		chatBox.appendChild(div);
+		const sys = chatBox.querySelectorAll(".sys");
+		if (sys.length > 20) sys[0].remove();
+		if (wasNear) scrollDown();
+	}
+
+	function renderUsers(users) {
+		usersBox.replaceChildren();
+		const label = document.createElement("span");
+		label.textContent = "🔮 в сети · " + users.length;
+		usersBox.appendChild(label);
+		users.forEach(u => {
+			const chip = document.createElement("span");
+			chip.className = "chip" + (u === username ? " me" : "");
+			chip.textContent = u;
+			usersBox.appendChild(chip);
+		});
+	}
+
+	function jumpTo(id) {
+		const node = chatBox.querySelector(`[data-id="${id}"]`);
+		if (!node) { showToast("Это сообщение уже растворилось в тумане 🌫️"); return; }
+		node.scrollIntoView({ behavior: "smooth", block: "center" });
+		const b = node.querySelector(".bubble");
+		b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash");
+	}
+
+	// ---------- ответы ----------
+	function setReply(msg) {
+		replyTarget = msg;
+		replyInfo.textContent = "↩ Ответ для " + msg.username + ": " + snippet(msg.content, 60);
+		replyBar.hidden = false;
+		input.focus();
+	}
+	function clearReply() { replyTarget = null; replyBar.hidden = true; }
+
+	function sendMessage() {
+		const content = input.value.trim();
+		if (!content) return;
+		if (!ws || ws.readyState !== WebSocket.OPEN) { showToast("Нет связи с луной… 🌙"); return; }
+		ws.send(JSON.stringify({ content: content, replyTo: replyTarget ? replyTarget.id : "" }));
+		input.value = "";
+		clearReply();
+		input.focus();
+	}
+
+	// ---------- события ----------
+	$("login-form").addEventListener("submit", (e) => {
+		e.preventDefault();
+		const name = nameInput.value.trim();
+		if (!NAME_RE.test(name)) {
+			loginError.textContent = "Имя: 2–20 символов, только a–z, A–Z и 0–9 🌙";
+			return;
+		}
+		authRejected = false; sessionEstablished = false; takenRetries = 0;
+		reconnectDelay = 1500; clearTimeout(reconnectTimer);
+		loginError.textContent = "";
+		showApp();
+		connect(name);
+	});
+
+	$("send-btn").onclick = sendMessage;
+	$("reply-cancel").onclick = clearReply;
+	input.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") sendMessage();
+		if (e.key === "Escape") clearReply();
+	});
+	window.addEventListener("beforeunload", () => { if (ws) ws.close(); });
+
+	nameInput.addEventListener("input", () => {
+		nameInput.value = nameInput.value.replace(/[^a-zA-Z0-9]/g, "");
+	});
+
+	// ---------- старт ----------
+	const saved = (localStorage.getItem(NAME_KEY) || "").trim();
+	if (saved && NAME_RE.test(saved)) {
+		showApp();
+		connect(saved)
+	} else {
+		localStorage.removeItem(NAME_KEY);
+		showLogin("");
+	}
+</script>
+</body>
+</html>
