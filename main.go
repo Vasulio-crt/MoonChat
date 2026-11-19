@@ -20,9 +20,9 @@ import (
 // ---------- Настройки ----------
 
 const (
-	maxHistory  = 100            // храним последние 100 сообщений
-	historyFile = "history.json" // файл истории
-	maxMsgLen   = 512            // максимальная длина сообщения
+	maxHistory  = 100                 // храним последние 100 сообщений
+	historyFile = "data/history.json" // файл истории
+	maxMsgLen   = 512                 // максимальная длина сообщения
 	writeWait   = 10 * time.Second
 	pongWait    = 60 * time.Second
 	pingPeriod  = (pongWait * 9) / 10
